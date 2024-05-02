@@ -1,0 +1,71 @@
+API Documentation
+/search/ Endpoint
+This endpoint allows users to perform a search by posting a query string. When a user uses the search feature (web search, not trend search), the web app will make a POST request to the API server containing a user_id (which is just the browser fingerprint), and the query string.
+
+Fig x.1. /search endpoint POST body example
+Once the API server gets the query, it will run two SQL statements. The first will Insert a new record into the `SEARCH_QUERY` table which will just log that this query was made in the first place. The next will update the `TREND` table based on the recorded search query. First it checks if there is a matching entry in the ‘TREND’ table where keyword matches as well as the start and end. Remember, the start and end will ALWAYS be the start and end day of any month respectively. For example, start can be April 1, 2022 or March 1, 2022, but it can never be March 2, 2022. Similarly end_date can be Feb 28, 2022 OR Feb 29 , 20XX depending on leap year etc. If no such entry exists, then another SQL will be run to create a new entry of that with the value ‘count’ being set to 1. If it does exist, the value ‘count’ will be incremented.
+
+The ‘/trends/popular’ Endpoint
+
+This endpoint retrieves the most popular words of today. The web app will make a get request which is supposed to show the most trending search term of the day. The API server will run a SQL command that will select entries from the ‘TREND’ table where the ‘start_date’ is equal to the ‘start_date’ of this month. It will then order by descending of the keyword count value. The API will then send a response in JSON form with an array of objects containing a string “keyword” and integer “count” representing the number of times that keyword was searched.
+
+
+Figure x.2. /trends/popular example response body
+
+
+Before executing the SQL query, the api server first checks if the requested data already exists in the Redis cache (we do this by using the hash of the request params as the key). If cached data is found, it is immediately returned as the response, eliminating the need to query the database. If cached data is not found, the system proceeds to execute the SQL query and retrieves the result from the database. The retrieved result is then stored in the Redis cache with a TTL  of 5 seconds, allowing subsequent requests for the same data to be served from the cache within that time period. 
+
+The ‘/trends/timeline/{keyword}’ Endpoint
+
+This endpoint retrieves the timeline of popularity for a specific query keyword. This will be a GET request. There is also an optional parameter called ’start’ and ‘end’. If this is not set, then the API server will search the SQL database for all entries in the ‘TREND’ table where the keyword is the given keyword from the url AND where the start_date is equal to or greater than the ‘start’ datetime and the end_date is less than or equal to the ‘end’ datetime. It will then return a JSON response of an array with objects that look like the following:
+
+Figure x.3. Example JSON response body
+
+This also uses the same form of redis caching where the key for the cache is derived from the value of the parameters ‘keyword’, ‘start’, and ‘end’. Technically there could be a more memory efficient way of doing individual ‘TREND’ entries of the same keyword, but that would greatly increase the complexity of the API and also the SQL queries. So for example, if a call is made for start=x and end=x+5, and then for start=x+1 and end=x+6, then there will be a cache miss.
+
+
+
+
+VM Specs
+
+CPU: 4 vCPUs
+RAM: 8 GB
+Storage: 100 GB SSD
+Operating System: Linux (e.g., Ubuntu, CentOS)
+Network: 1 Gbps
+
+
+SQL Cluster Data Node:
+
+CPU: 8 vCPUs
+RAM: 32 GB
+Storage: 500 GB SSD
+Operating System: Linux (e.g., Ubuntu, CentOS)
+Network: 10 Gbps
+
+
+SQL Cluster Management Node:
+
+CPU: 2 vCPUs
+RAM: 4 GB
+Storage: 100 GB SSD
+Operating System: Linux (e.g., Ubuntu, CentOS)
+Network: 1 Gbps
+
+
+API Node:
+
+CPU: 4 vCPUs
+RAM: 8 GB
+Storage: 100 GB SSD
+Operating System: Linux (e.g., Ubuntu, CentOS)
+Network: 1 Gbps
+
+
+Redis Cluster Node:
+
+CPU: 4 vCPUs
+RAM: 16 GB
+Storage: 100 GB SSD
+Operating System: Linux (e.g., Ubuntu, CentOS)
+Network: 10 Gbps
