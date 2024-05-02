@@ -1,0 +1,44 @@
+Overview  
+
+Our scaled system employs MySQL as the database for our SQL cluster management node, supported by three individual data nodes for handling interactions.
+For data processing, we utilize Redis, a real-time data platform, across three cache servers, which act as a distributed caching layer for quick data retrieval. 
+The system includes three API servers to efficiently process API calls for high throughput. 
+
+Key Features: 
+
+Data is stored and retrieved from the Redis server, providing fast access to frequently requested information.
+A load balancer distributes incoming traffic across the three API servers, ensuring optimal resource utilization and preventing any one server from becoming overwhelmed. 
+This setup, featuring three data nodes, three cache servers, and three API servers, ensures full redundancy and fault tolerance, providing seamless scalability and reliability in handling large volumes of data. 
+
+Data Topology 
+
+
+
+
+
+
+Zone Map 
+
+Frontend Zone: API servers that handle incoming requests, managed by a load balancer for distribution. 
+
+Cache Zone: Contains three Redis cache servers, acting as a distributed cache layer. 
+
+Database Zone: MySQL cluster with a management node and three data nodes. 
+
+Data Flow:  
+
+Requests: Begin at the API servers, routed by the load balancer. 
+
+Cache Check: The API servers check Redis first for cached data. 
+
+DB Query: If the data is not cached, the API servers query the MySQL cluster, which reads from the correct data node. 
+
+Response: The data retrieved is then sent back to the client, potentially with caching for requests. 
+
+Data Layer:  
+
+MySQL Database Cluster: Stores primary data with redundancy and replication. 
+
+Redis Cache Layer: A caching layer for frequently accessed data from our users. 
+
+Load Balancer: Distributes the incoming requests across the API servers for load a distribution, and high availability. 
